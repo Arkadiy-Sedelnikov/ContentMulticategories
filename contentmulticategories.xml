@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="2.5" type="plugin" group="system" method="upgrade">
+    <name>System - Content Multicategories</name>
+    <author>Arkadiy</author>
+    <creationDate>21.09.2016</creationDate>
+    <copyright>(C) 2010-2016 by Arkadiy Sedelnikov</copyright>
+    <license>GNU/GPL: http://www.gnu.org/copyleft/gpl.html</license>
+    <authorEmail>a.sedelnikov@gmail.com</authorEmail>
+    <authorUrl>http://argens.ru</authorUrl>
+    <version>1.1</version>
+    <description>Add multicategories to com_content</description>
+    <files>
+        <folder>classes</folder>
+        <folder>language</folder>
+        <folder>sql</folder>
+        <filename plugin="contentmulticategories">contentmulticategories.php</filename>
+		<filename>index.html</filename>
+    </files>
+    <languages folder="language">
+        <language tag="en-GB">en-GB/en-GB.plg_system_contentmulticategories.ini</language>
+        <language tag="ru-RU">ru-RU/ru-RU.plg_system_contentmulticategories.ini</language>
+    </languages>
+    <install>
+        <sql>
+            <file charset="utf8" driver="mysql">sql/install.sql</file>
+        </sql>
+    </install>
+    <uninstall>
+        <sql>
+            <file charset="utf8" driver="mysql">sql/uninstall.sql</file>
+        </sql>
+    </uninstall>
+    <update>
+        <schemas>
+            <schemapath type="mysql">sql/updates/mysql</schemapath>
+        </schemas>
+    </update>
+    <config>
+        <fields name="params">
+            <fieldset name="basic">
+                <field
+                        name="target"
+                        type="list"
+                        default="default"
+                        label="PLG_CMC_VARIANT"
+                        description="PLG_CMC_VARIANT_DESC"
+                >
+                    <option value="default">PLG_CMC_VARIANT_DEFAULT_CAT</option>
+                    <option value="current">PLG_CMC_VARIANT_CURRENT_CAT</option>
+                </field>
+                <field
+                        name="lang_filter"
+                        type="list"
+                        default="0"
+                        label="PLG_CMC_LANG_FILTER"
+                        description="PLG_CMC_LANG_FILTER_DESC"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+                <field
+                        name="acl_filter"
+                        type="list"
+                        default="0"
+                        label="PLG_CMC_ACL_FILTER"
+                        description="PLG_CMC_ACL_FILTER_DESC"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+            </fieldset>
+        </fields>
+    </config>
+</extension>
