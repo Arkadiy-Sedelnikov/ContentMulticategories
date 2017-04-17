@@ -329,7 +329,7 @@ class plgSystemContentmulticategories extends JPlugin
         }
         else if($view == 'article'){
             $catid = $this->app->getUserState('contentmulticategories.previous_category_'.$item->id, 0);
-            if($catid != 0 && $catid != $item->catid){
+            if($catid <> $item->catid){
                 $document = JFactory::getDocument();
                 $document->addHeadLink($item->readmore_link, 'canonical');
                 $catData = $this->getCatData($catid);
