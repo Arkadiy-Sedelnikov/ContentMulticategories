@@ -7,17 +7,28 @@
  * @license     GNU General Public License version 2 or later; see LICENSE.txt
  */
 
-defined('_JEXEC') or die;
+namespace Joomla\Component\Content\Site\Model;
 
+use Joomla\CMS\Categories\Categories;
+use Joomla\CMS\Categories\CategoryNode;
+use Joomla\CMS\Factory;
+use Joomla\CMS\Language\Multilanguage;
+use Joomla\CMS\MVC\Model\ListModel;
+use Joomla\CMS\Table\Table;
+use Joomla\Component\Content\Site\Helper\QueryHelper;
+use Joomla\Utilities\ArrayHelper;
 use Joomla\Registry\Registry;
+use Joomla\CMS\Plugin\PluginHelper;
 
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
 /**
  * This models supports retrieving a category, the articles associated with the category,
  * sibling, child and parent categories.
  *
  * @since  1.5
  */
-class ContentModelCategory extends JModelList
+class CategoryModel extends ListModel
 {
 	/**
 	 * Category items data
@@ -107,15 +118,16 @@ class ContentModelCategory extends JModelList
 	 */
 	protected function populateState($ordering = null, $direction = null)
 	{
-		$app = JFactory::getApplication('site');
+		$app = Factory::getApplication('site');
 		$pk  = $app->input->getInt('id');
+//		echo($apk);
 
 		$this->setState('category.id', $pk);
 
 		// Load the parameters. Merge Global and Menu Item params into new object
-		$params = $app->getParams();
-		$menuParams = new Registry;
-
+        $params = $app->getParams();
+        $this->setState('params', $params);
+/*
 		if ($menu = $app->getMenu()->getActive())
 		{
 			$menuParams->loadString($menu->params);
@@ -128,13 +140,14 @@ class ContentModelCategory extends JModelList
 		$user  = JFactory::getUser();
 
 		$asset = 'com_content';
-
+*/
+/*
 		if ($pk)
 		{
 			$asset .= '.category.' . $pk;
 		}
-
-		if ((!$user->authorise('core.edit.state', $asset)) &&  (!$user->authorise('core.edit', $asset)))
+*/
+	/*	if ((!$user->authorise('core.edit.state', $asset)) && (!$user->authorise('core.edit', $asset)))
 		{
 			// Limit to published for people who can't edit or edit.state.
 			$this->setState('filter.published', 1);
@@ -143,7 +156,7 @@ class ContentModelCategory extends JModelList
 		{
 			$this->setState('filter.published', array(0, 1, 2));
 		}
-
+*/
 		// Process show_noauth parameter
 		if (!$params->get('show_noauth'))
 		{
@@ -201,7 +214,7 @@ class ContentModelCategory extends JModelList
 			$this->setState('filter.subcategories', true);
 		}
 
-		$this->setState('filter.language', JLanguageMultilang::isEnabled());
+		$this->setState('filter.language', Multilanguage::isEnabled());
 
 		$this->setState('layout', $app->input->getString('layout'));
 
@@ -222,8 +235,9 @@ class ContentModelCategory extends JModelList
 
 		if ($this->_articles === null && $category = $this->getCategory())
 		{
-			$model = JModelLegacy::getInstance('Articles', 'ContentModel', array('ignore_request' => true));
-			$model->setState('params', JFactory::getApplication()->getParams());
+			 $model = $this->bootComponent('com_content')->getMVCFactory()
+                ->createModel('Articles', 'Site', ['ignore_request' => true]);           
+			$model->setState('params', Factory::getApplication()->getParams());
 			$model->setState('filter.category_id', $category->id);
 			$model->setState('filter.published', $this->getState('filter.published'));
 			$model->setState('filter.access', $this->getState('filter.access'));
@@ -241,11 +255,11 @@ class ContentModelCategory extends JModelList
 			$model->setState('list.links', $this->getState('list.links'));
 
 			//Arkadiy hack
-			$dispatcher = JEventDispatcher::getInstance();
+			//$dispatcher = ListenersPriorityQueue::getInstance();
 			// Include the content plugins for the change of category state event.
-			JPluginHelper::importPlugin('system');
+			PluginHelper::importPlugin('system');
 			// Trigger the onCategoryChangeState event.
-			$dispatcher->trigger('onGetContentItems', array(&$model));
+			Factory::getApplication()->triggerEvent('onGetContentItems', array(&$model));
 			//end of Arkadiy hack
 
 			if ($limit >= 0)
@@ -277,7 +291,7 @@ class ContentModelCategory extends JModelList
 	 */
 	protected function _buildContentOrderBy()
 	{
-		$app       = JFactory::getApplication('site');
+		$app       = Factory::getApplication();
 		$db        = $this->getDbo();
 		$params    = $this->state->params;
 		$itemid    = $app->input->get('id', 0, 'int') . ':' . $app->input->get('Itemid', 0, 'int');
@@ -303,8 +317,8 @@ class ContentModelCategory extends JModelList
 		$articleOrderby   = $params->get('orderby_sec', 'rdate');
 		$articleOrderDate = $params->get('order_date');
 		$categoryOrderby  = $params->def('orderby_pri', '');
-		$secondary        = ContentHelperQuery::orderbySecondary($articleOrderby, $articleOrderDate) . ', ';
-		$primary          = ContentHelperQuery::orderbyPrimary($categoryOrderby);
+		$secondary        = QueryHelper::orderbySecondary($articleOrderby, $articleOrderDate, $this->getDatabase()) . ', ';
+        $primary          = QueryHelper::orderbyPrimary($categoryOrderby);
 
 		$orderby .= $primary . ' ' . $secondary . ' a.created ';
 
@@ -350,21 +364,21 @@ class ContentModelCategory extends JModelList
 				$options['countItems'] = 0;
 			}
 
-			$categories = JCategories::getInstance('Content', $options);
+			$categories  = Categories::getInstance('Content', $options);
 			$this->_item = $categories->get($this->getState('category.id', 'root'));
 
 			// Compute selected asset permissions.
 			if (is_object($this->_item))
 			{
-				$user  = JFactory::getUser();
+				$user  = $this->getCurrentUser();
 				$asset = 'com_content.category.' . $this->_item->id;
 
 				// Check general create permission.
-				if ($user->authorise('core.create', $asset))
+	/*			if ($user->authorise('core.create', $asset))
 				{
 					$this->_item->getParams()->set('access-create', true);
 				}
-
+*/
 				// TODO: Why aren't we lazy loading the children and siblings?
 				$this->_children = $this->_item->getChildren();
 				$this->_parent = false;
